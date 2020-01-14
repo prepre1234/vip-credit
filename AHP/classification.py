@@ -88,16 +88,16 @@ sleep_toSleep_active=[len(sleep),len(toSleep),len(active)]
 
 #--------------------提供供应商id/name---------------------
 
-
-#2019年投标/中标供应商分析
-id_list=readDataFromMysql("SELECT DISTINCT(supplier_id) from zjc_bid_tender where tendertime>'2019'")
-id_list=list(id_list[0])
-
 '''
+#2019年投标/中标供应商分析
+id_list=readDataFromMysql("SELECT DISTINCT(supplier_id) from zjc_bid_tender where tendertime>'2019' and iswin=1")
+id_list=list(id_list[0])
+'''
+
 #已充值的vip供应商
 id_list=pd.read_csv('supplier_vip.txt')
 id_list=list(np.array(id_list).flatten())
-'''
+
 
 #--------------------分析---------------------
 search=analyseDF.loc[analyseDF['id'].isin(id_list)]
