@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from torch.autograd import Variable
-import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
  
@@ -17,18 +16,6 @@ x = torch.cat((x0, x1), 0).type(torch.FloatTensor)  # FloatTensor = 32-bit float
 y = torch.cat((y0, y1), 0).type(torch.FloatTensor)    # LongTensor = 64-bit integer
 y=y.view(200,1)
 
-
- 
-class LogisticRegression(nn.Module):
-    def __init__(self):
-        super(LogisticRegression, self).__init__()
-        self.lr = nn.Linear(2, 1)
-        self.sm = nn.Sigmoid()
- 
-    def forward(self, x):
-        x = self.lr(x)
-        x = self.sm(x)
-        return x
  
 logistic_model = LogisticRegression()
 if torch.cuda.is_available():
