@@ -9,4 +9,5 @@ $$
 $$tep1}{\style{visibility:hidden}{(x+1)(x+1)}}
 $$
 
-![](http://latex.codecogs.com/gif.latex?\\sigma=\sqrt{\frac{1}{n}{\sum_{k=1}^n(x_i-\bar{x})^2}})
+![](http://chart.googleapis.com/chart?cht=tx&chl=\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a})
+)
