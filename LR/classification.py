@@ -3,6 +3,8 @@ from torch import nn
 from torch.autograd import Variable
 import numpy as np
 from datetime import datetime
+from model import LogisticRegression
+from utils import readDataFromMysql
  
 # 假数据
 n_data = torch.ones(100, 2)         # 数据的基本形态
