@@ -37,6 +37,7 @@ if cuda:
 
 FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 data_standard = Variable(FloatTensor(data_standard))
+labels = Variable(FloatTensor(labels))
 
 print("training...")
 begin = datetime.now()
