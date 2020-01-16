@@ -1,11 +1,14 @@
+import numpy as np
+from datetime import datetime
+from sklearn import preprocessing
+
 import torch
 from torch import nn
 from torch.autograd import Variable
-import numpy as np
-from datetime import datetime
+
 from model import LogisticRegression
 from utils import readDataFromMysql
-from sklearn import preprocessing
+
 
 # load data
 data = readDataFromMysql('select zjc_supplier.id,zjc_supplier_param.attach_count,zjc_supplier.type,zjc_supplier.fund,zjc_supplier_param.service_level_average,zjc_supplier_param.instock_service_average,zjc_supplier_param.instock_product_average,zjc_supplier_param.instock_deliverspeed_average,zjc_supplier_param.iswin_count,zjc_supplier_param.price_level_average,zjc_supplier_param.tender_count,zjc_supplier_param.semester_tender_count,zjc_supplier_param.bidconcern_count,zjc_supplier_param.semester_bidconcern_count,zjc_supplier_param.login_days,zjc_supplier_param.semester_login_days,zjc_supplier_param.integrity_count,zjc_supplier_param.contract_rate,zjc_supplier_param.instock_honesty_average from zjc_supplier INNER JOIN zjc_supplier_param on zjc_supplier.id=zjc_supplier_param.supplier_id where zjc_supplier.state=2;')
