@@ -18,9 +18,9 @@ data_standard = scaler.transform(data_param)
 
 '''The only one you need to define'''
 # labels
-labels = torch.rand(data_standard.shape[0],1).ge(0.5).float()
+labels = torch.rand(data_standard.shape[0], 1).ge(0.5).float()
 
-cuda=True if torch.cuda.is_available() else False
+cuda = True if torch.cuda.is_available() else False
 
 logistic_model = LogisticRegression()
 
@@ -32,8 +32,8 @@ if cuda:
     logistic_model.cuda()
     criterion.cuda()
 
-FloatTensor=torch.cuda.FloatTensor if cuda else torch.FloatTensor
-data_standard=Variable(FloatTensor(data_standard))
+FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+data_standard = Variable(FloatTensor(data_standard))
 
 print("training...")
 begin = datetime.now()
