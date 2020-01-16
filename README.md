@@ -7,4 +7,9 @@
     * LR *逻辑回归*
     * SVM *支持向量机*
     * NN *简单神经网络*
+  
+## Installation
+```
+$ pip install -r requirements.txt
+```
 
