@@ -39,7 +39,7 @@ print("training...")
 begin = datetime.now()
 
 # 开始训练
-for iteration in range(10000):
+for epoch in range(10000):
 
     out = logistic_model(data_standard)
     loss = criterion(out, labels)
@@ -50,10 +50,10 @@ for iteration in range(10000):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    # 每隔5000iteration打印一下当前的误差和精度
-    if (iteration + 1) % 5000 == 0:
+    # 每隔5000epoch打印一下当前的误差和精度
+    if (epoch + 1) % 5000 == 0:
         print('*'*10)
-        print('iteration {}'.format(iteration+1))  # 训练轮数
+        print('epoch {}'.format(epoch+1))  # 训练轮数
         print('loss is {:.4f}'.format(print_loss))  # 误差
         print('acc is {:.4f}'.format(acc))  # 精度
 
