@@ -24,6 +24,7 @@ parser.add_argument("--batch_size", type=int, default=8,
                     help="size of the batches")
 parser.add_argument("--epoch", type=int, default=500, help="size of epoches")
 opt = parser.parse_args()
+print("args:")
 print(opt)
 
 # load data
@@ -43,7 +44,7 @@ cuda = True if torch.cuda.is_available() else False
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
 # network_model = network(data_standard.shape[1])
-network_model = network()
+network_model = network(18)
 
 # 定义损失函数和优化器
 optimizer = torch.optim.Adam(

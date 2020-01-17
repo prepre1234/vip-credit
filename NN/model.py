@@ -2,7 +2,7 @@ from torch import nn
 
 
 class network(nn.Module):
-    def __init__(self):
+    def __init__(self,dim):
         super(network, self).__init__()
 
         def block(in_feat, out_feat, normalize=False):
@@ -13,7 +13,7 @@ class network(nn.Module):
             return layers
 
         self.model = nn.Sequential(
-            *block(18, 64),
+            *block(dim, 64),
             *block(64, 128),
             *block(128, 256),
             *block(256, 64),
