@@ -26,6 +26,9 @@
     * LR *逻辑回归*
     * NN *神经网络*
 
+### 数据集(*kaggle*)
+    * [GiveMeSomeCredit](https://www.kaggle.com/c/GiveMeSomeCredit/data)
+
 ### 评分卡
 *  #### WOE
     * [信用评分卡模型分数校准](https://zhuanlan.zhihu.com/p/82670834)
