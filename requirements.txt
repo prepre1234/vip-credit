@@ -79,5 +79,6 @@ wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.4.2
 wincertstore==0.2
+woe==0.1.4
 wrapt==1.11.1
 zipp==0.6.0
