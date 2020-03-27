@@ -6,6 +6,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from collections import OrderedDict
 
 import woe.feature_process as fp
 import woe.eval as eval
@@ -22,13 +23,11 @@ class LogisticRegression(nn.Module):
     def __init__(self):
         super(LogisticRegression, self).__init__()
 
-        self.model = nn.Sequential(
-            nn.Linear(opt.dim, 1),
-            nn.Sigmoid()
-        )
+        self.Linear = nn.Linear(10, 1)
+        self.Sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        return self.model(x)
+        return self.Sigmoid(self.Linear(x))
 
 
 # Loss function
@@ -47,7 +46,6 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.Tensor
 if cuda:
     LogRe.cuda()
     criterion.cuda()
-
 
 data = pd.read_csv('./data/cs-training.csv').iloc[:, 1:]
 data.rename(columns={'SeriousDlqin2yrs': 'target'}, inplace=True)
@@ -113,11 +111,25 @@ print("total time:", (end-begin).seconds)
 
 # -------------credit scores--------------
 
-print('credit scores...')
+class LnOdds(nn.Module):
+    def __init__(self):
+        super(LnOdds, self).__init__()
 
-W = np.array(LogRe.state_dict()['model.0.weight'])
-b = np.array(LogRe.state_dict()['model.0.bias'])
+        self.Linear = nn.Linear(10, 1)
 
-ln_odds = np.dot(np.array(data_train), W.T)+b
-credit = 487.122-28.8539*ln_odds
-pd.DataFrame(credit).to_csv("credit_scores.csv")
+    def forward(self, x):
+        return self.Linear(x)
+
+
+ln_odds = LnOdds()
+
+LR_state_dict = LogRe.state_dict()
+ln_odds_state_dict = ln_odds.state_dict()
+LR_state_dict_temp = {
+    k: v for k, v in LR_state_dict.items() if k in ln_odds_state_dict}
+ln_odds_state_dict.update(LR_state_dict_temp)
+ln_odds.load_state_dict(ln_odds_state_dict)
+
+credit = 487.122-28.8539*ln_odds(data_train)
+pd.DataFrame(pd.DataFrame(np.array(credit.data))).to_csv(
+    "./dataDump/credit_scores.csv")
