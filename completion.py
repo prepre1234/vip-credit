@@ -189,8 +189,8 @@ for epoch in range(opt.epo):
             % (epoch, opt.epo, i, len(dataloader), loss_d.item(), loss_g.item())
         )
 
-    end = datetime.now()
-    print("Total time", (end-begin).seconds)
+end = datetime.now()
+print("Total time", (end-begin).seconds)
 
 
 # ------------ Completing -------------
