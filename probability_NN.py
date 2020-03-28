@@ -11,10 +11,11 @@ import pandas as pd
 from datetime import datetime
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from tensorboardX import SummaryWriter
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--bs', type=int, default=64, help='size of the batches')
-parser.add_argument('--epo', type=int, default=1, help='size of epoches')
+parser.add_argument('--epo', type=int, default=5, help='size of epoches')
 parser.add_argument('--dim', type=int, default=10, help='dim of data')
 opt = parser.parse_args()
 print("args:")
@@ -108,6 +109,7 @@ print('training...')
 begin = datetime.now()
 
 # Begin training
+writer = SummaryWriter()
 for epoch in range(opt.epo):
     for i, batch in enumerate(dataloader):
 
@@ -129,16 +131,23 @@ for epoch in range(opt.epo):
         pr = network(dataset_test)
         test_loss = criterion(pr, label_test)
 
-        # accuracy
-        predict_labels = torch.ge(pr, 0.5).float()
-        correct = torch.eq(predict_labels, label_test).sum()
-        acc = correct.item()/predict_labels.shape[0]
+        if i % 10 == 0:
+            # accuracy
+            predict_labels = torch.ge(pr, 0.5).float()
+            correct = torch.eq(predict_labels, label_test).sum()
+            acc = correct.item()/predict_labels.shape[0]
 
-        # print log
-        print(
-            "[Epoch %d/%d] [Batch %d/%d] [trainLoss: %f] [testLoss: %f] [acc: %f]"
-            % (epoch, opt.epo, i, len(dataloader), loss.item(), test_loss.item(), acc)
-        )
+            # tensorboard visualize
+            writer.add_scalars('Training&Testing Loss', {
+                'Training Loss': loss.item(), 'Testing Loss': test_loss.item()}, i)
+            writer.add_scalar('Accuracy', acc, i)
 
+            # print log
+            print(
+                "[Epoch %d/%d] [Batch %d/%d] [trainLoss: %f] [testLoss: %f] [acc: %f]"
+                % (epoch, opt.epo, i, len(dataloader), loss.item(), test_loss.item(), acc)
+            )
+
+writer.close()
 end = datetime.now()
 print("total time:", (end-begin).seconds)
