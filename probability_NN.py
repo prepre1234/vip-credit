@@ -14,9 +14,9 @@ from sklearn.model_selection import train_test_split
 from tensorboardX import SummaryWriter
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--bs', type=int, default=64, help='size of the batches')
-parser.add_argument('--epo', type=int, default=5, help='size of epoches')
-parser.add_argument('--dim', type=int, default=10, help='dim of data')
+parser.add_argument('--bs', type=int, default=32, help='size of the batches')
+parser.add_argument('--epo', type=int, default=3, help='size of epoches')
+parser.add_argument('--dim', type=int, default=19, help='dim of data')
 opt = parser.parse_args()
 print("args:")
 print(opt)
@@ -84,16 +84,16 @@ if cuda:
     criterion.cuda()
 
 # data = pd.read_csv('./dataDump/balance_data.csv').iloc[:, 1:]
-data_df = pd.read_csv('./data/cs-training.csv').iloc[:, 1:]
+data_df = pd.read_csv('./dataDump/vip_data.csv').iloc[:, 1:]
 data_df = data_df.dropna()
 
 # original data -> 0 for good guys, 1 for bad guys,so revert labels
-data_df.iloc[:, 0] = 1-data_df.iloc[:, 0]
+# data_df.iloc[:, 0] = 1-data_df.iloc[:, 0]
 
 labels = np.array(data_df.iloc[:, 0]).reshape(data_df.shape[0], -1)
 data = np.array(data_df.iloc[:, 1:])
 dataset_train, dataset_test, label_train, label_test = train_test_split(
-    data, labels, test_size=0.3)
+    data, labels, test_size=0.2)
 
 dataloader = DataLoader(
     dataset(dataset_train, label_train),
@@ -131,7 +131,7 @@ for epoch in range(opt.epo):
         pr = network(dataset_test)
         test_loss = criterion(pr, label_test)
 
-        if i % 10 == 0:
+        if i % 2 == 0:
             # accuracy
             predict_labels = torch.ge(pr, 0.5).float()
             correct = torch.eq(predict_labels, label_test).sum()
