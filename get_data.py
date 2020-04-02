@@ -24,6 +24,7 @@ def get_data(data_pd, label):
     # return pd.DataFrame(data_list)
 
 
+data_pay = pd.read_csv("./data/vip_1.csv")
 data_refuse = pd.read_csv("./data/vip_0.csv")
 
 data_pay = pd.DataFrame([data for data in get_data(data_pay, 1)])
