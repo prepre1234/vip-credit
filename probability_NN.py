@@ -30,51 +30,37 @@ lr = 1e-3
 beta1 = 0.9
 beta2 = 0.9
 
-
-pub = False
-zhiding = False
 tensorboard = False
 
 # ds:data_scale
-if not pub:
-    dim = 19
-    ds = 1
-    # ts:test_size
-    ts = 0.01
-else:
-    dim = 10
-    if zhiding:
-        tsize = 350
-        vsize = 2400
-        ds = (tsize+vsize)/120269
-        ts = vsize/(tsize+vsize)
-    else:
-        ds = 1
-        ts = 0.2
+dim = 19
+ds = 1
+# ts:test_size
+ts = 0.2
 
-if not pub:
-    ##############################
-    sql = 'select zjc_supplier.name,zjc_supplier.province,zjc_supplier_param.attach_count,zjc_supplier.type,zjc_supplier.fund,zjc_supplier_param.service_level_average,zjc_supplier_param.instock_service_average,zjc_supplier_param.instock_product_average,zjc_supplier_param.instock_deliverspeed_average,zjc_supplier_param.iswin_count,zjc_supplier_param.price_level_average,zjc_supplier_param.tender_count,zjc_supplier_param.semester_tender_count,zjc_supplier_param.bidconcern_count,zjc_supplier_param.semester_bidconcern_count,zjc_supplier_param.login_days,zjc_supplier_param.semester_login_days,zjc_supplier_param.integrity_count,zjc_supplier_param.contract_rate,zjc_supplier_param.instock_honesty_average,zjc_supplier.regchecktime,zjc_supplier.createtime from zjc_supplier INNER JOIN zjc_supplier_param on zjc_supplier.id=zjc_supplier_param.supplier_id where zjc_supplier.state=2;'
-    # pre_data:将要预测的供应商（所有供应商，包括训练用的正负样本）
-    pre_data = readDataFromMysql(sql)
-    # name_region：前两列是供应商的名字和地区，保存留到后面使用
-    name_region = pre_data[[0, 1]]
-    # pre_data:分离name_region后的剩余列数据
-    pre_data = pre_data.iloc[:, 2:]
-    total = pre_data.shape[0]
 
-    # 最后两列是注册和审核时间，用于计算已经成为平台用户的时长
-    time = computeTime(pre_data.iloc[:, 18:])
-    # 将注册和审核时间替换为时长
-    pre_data = pd.concat([pre_data.iloc[:, 0:18], time], axis=1)
-    pre_data = pre_data.astype('float32')
-    pre_data = np.array(pre_data)
+##############################
+sql = 'select zjc_supplier.name,zjc_supplier.province,zjc_supplier_param.attach_count,zjc_supplier.type,zjc_supplier.fund,zjc_supplier_param.service_level_average,zjc_supplier_param.instock_service_average,zjc_supplier_param.instock_product_average,zjc_supplier_param.instock_deliverspeed_average,zjc_supplier_param.iswin_count,zjc_supplier_param.price_level_average,zjc_supplier_param.tender_count,zjc_supplier_param.semester_tender_count,zjc_supplier_param.bidconcern_count,zjc_supplier_param.semester_bidconcern_count,zjc_supplier_param.login_days,zjc_supplier_param.semester_login_days,zjc_supplier_param.integrity_count,zjc_supplier_param.contract_rate,zjc_supplier_param.instock_honesty_average,zjc_supplier.regchecktime,zjc_supplier.createtime from zjc_supplier INNER JOIN zjc_supplier_param on zjc_supplier.id=zjc_supplier_param.supplier_id where zjc_supplier.state=2;'
+# pre_data:将要预测的供应商（所有供应商，包括训练用的正负样本）
+pre_data = readDataFromMysql(sql)
+# name_region：前两列是供应商的名字和地区，保存留到后面使用
+name_region = pre_data[[0, 1]]
+# pre_data:分离name_region后的剩余列数据
+pre_data = pre_data.iloc[:, 2:]
+total = pre_data.shape[0]
 
-    # 标准化处理
-    scaler = preprocessing.StandardScaler().fit(pre_data)
-    pre_data = scaler.transform(pre_data)
+# 最后两列是注册和审核时间，用于计算已经成为平台用户的时长
+time = computeTime(pre_data.iloc[:, 18:])
+# 将注册和审核时间替换为时长
+pre_data = pd.concat([pre_data.iloc[:, 0:18], time], axis=1)
+pre_data = pre_data.astype('float32')
+pre_data = np.array(pre_data)
 
-    ##############################
+# 标准化处理
+scaler = preprocessing.StandardScaler().fit(pre_data)
+pre_data = scaler.transform(pre_data)
+
+##############################
 
 
 class dataset(Dataset):
@@ -132,8 +118,7 @@ class Network(nn.Module):
             ResidualBlock(256),
             *block(256, 64),
             ResidualBlock(64),
-            *block(64, 1),
-            nn.Sigmoid()
+            *block(64, 3),
         ]
 
         self.model = nn.Sequential(*model)
@@ -154,16 +139,16 @@ def weights_init(m):
 
 
 # Loss function
-criterion = nn.BCELoss()
+criterion = nn.CrossEntropyLoss()
 
 # Initialize network
 network = Network()
 network.apply(weights_init)
 
 # Optimizer
-# optimizer = torch.optim.SGD(network.parameters(), lr=lr, momentum=0.9)
-optimizer = torch.optim.Adam(
-    network.parameters(), lr=lr, betas=(beta1, beta2))
+optimizer = torch.optim.SGD(network.parameters(), lr=lr, momentum=0.9)
+# optimizer = torch.optim.Adam(
+#     network.parameters(), lr=lr, betas=(beta1, beta2))
 
 # lr_decay
 scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -176,12 +161,9 @@ if cuda:
     network.cuda()
     criterion.cuda()
 
-if pub:
-    data_df = pd.read_csv('./data/cs-training.csv').iloc[:, 1:]
-else:
-    # data_df：目前的VIP正负样本
-    data_df = pd.read_csv('./dataDump/vip_data.csv').iloc[:, 1:]
-    # data_df = data_df.iloc[:, [0, 3, 8, 10, 11, 12, 13, 14, 15, 16, 19]]
+# data_df：目前的VIP正负样本
+data_df = pd.read_csv('./dataDump/vip_data.csv')
+# data_df = data_df.iloc[:, [0, 3, 8, 10, 11, 12, 13, 14, 15, 16, 19]]
 
 data_df = data_df.dropna()
 
@@ -190,12 +172,9 @@ data_df = data_df.iloc[0:int(data_df.shape[0]*ds)]
 
 # data_df[pd.DataFrame(data_df.iloc[:, 0]).duplicated()] #查找正负样本重叠部分（数据给的有问题）
 name_set = set(data_df.iloc[:, 0])
-labels = np.array(data_df.iloc[:, 1]).reshape(data_df.shape[0], -1)
+labels = torch.LongTensor(np.array(data_df.iloc[:, 1]))
+# labels = torch.zeros(len(data_df), 3).scatter_(1, labels, 1)
 data = np.array(data_df.iloc[:, 2:])
-
-if pub:
-    scaler = preprocessing.StandardScaler().fit(data)
-
 data = scaler.transform(data)
 
 
@@ -214,7 +193,7 @@ dataloader = DataLoader(
 )
 
 dataset_test = Variable(Tensor(dataset_test).type(Tensor))
-label_test = Variable(Tensor(label_test).type(Tensor))
+label_test = Variable(label_test)
 
 print('training...')
 begin = datetime.now()
@@ -226,13 +205,13 @@ for epoch in range(epo):
 
         # Configure input
         train = Variable(batch["data"].type(Tensor))
-        label = Variable(batch["labels"].type(Tensor))
+        label = Variable(batch["labels"])
 
         network.train()
         optimizer.zero_grad()
 
-        possibility = network(train)
-        loss = criterion(possibility, label)
+        output = network(train)
+        loss = criterion(output, label)
 
         loss.backward()
         optimizer.step()
@@ -244,7 +223,7 @@ for epoch in range(epo):
 
         if i % 2 == 0:
             # accuracy
-            predict_labels = torch.ge(pr, 0.5).float()
+            predict_labels = torch.argmax(pr, axis=1)
             correct = torch.eq(predict_labels, label_test).sum()
             acc = correct.item()/predict_labels.shape[0]
 
@@ -262,78 +241,186 @@ for epoch in range(epo):
 
     scheduler.step()
 
+print('acc: %f' % acc)
+
 writer.close()
 end = datetime.now()
 print("total time:", (end-begin).seconds)
 
-if not pub:
-    # prediction
-    network.eval()
-    pre_data = Variable(Tensor(pre_data).type(Tensor))
-    # pre_result预测的概率
-    pre_result = network(pre_data)
 
-    will = torch.ge(pre_result, 0.5).float().sum()
-    no = torch.lt(pre_result, 0.4).float().sum()
+# prediction
+network.eval()
+pre_data = Variable(Tensor(pre_data).type(Tensor))
+# pre_result预测的类别
+pre_result = network(pre_data)
+pre_cat = pre_result.argmax(axis=1)
+print('refuse: ', (pre_cat == 0).sum().item())
+print('accept: ', (pre_cat == 1).sum().item())
+print('uncertainty: ', (pre_cat == 2).sum().item())
 
-    # 会充值/0.4-0.5二次充值/不会充值
-    print('>=0.5:\t', will)
-    print('>=0.4&&<0.5\t:', total-will-no)
-    print('<0.4:\t', no)
+pre_cat_df = pd.DataFrame(pre_cat.detach().numpy())
+pre_result = pd.concat([name_region, pre_cat_df], axis=1)
+pre_result.columns = ['name', 'province', 'category']
+pre_positive = pre_result.query('category==1')
 
-    pre_result = pd.DataFrame(pre_result.detach().numpy())
-    # pre_result更新为：名字、地区、概率
-    pre_result = pd.concat([name_region, pre_result], axis=1)
-    # pre_positive预测会充值的供应商
-    pre_positive = pre_result[pre_result.iloc[:, 2] >= 0.5]
-    pre_positive.columns = ['name', 'province', 'prob']
+# 去除预测名单种已经在正负样本中的供应商
+tmp = []
+for row in pre_positive.itertuples():
+    name = getattr(row, 'name')
+    if name not in name_set:
+        tmp.append(row)
 
-    # 去除正负样本中的供应商
-    tmp = []
-    for row in pre_positive.itertuples():
-        name = getattr(row, 'name')
-        if name not in name_set:
-            tmp.append(row)
+pre_positive = pd.DataFrame(tmp)
+# pre_positive.sort_values('prob', ascending=False, inplace=True,)
+print('最终预测VIP充值的有：', len(pre_positive))
+pre_positive.iloc[:, 1:].to_csv(
+    './dataResult/pre_positive.csv', index=False)
 
-    pre_positive = pd.DataFrame(tmp)
-    pre_positive.sort_values('prob', ascending=False, inplace=True,)
-    print('最终预测VIP充值的有：', len(pre_positive))
 
-    Yangtze_River_Delta = set({'上海市', '江苏省', '浙江省', '安徽省'})
-    # top50/长三角/其他
-    top = pre_positive.iloc[0:50]
-    top_Yangtze_River_Delta = []
-    top_other = []
-    for row in top.itertuples():
-        province = getattr(row, 'province')
-        if province in Yangtze_River_Delta:
-            top_Yangtze_River_Delta.append(row)
-        else:
-            top_other.append(row)
-    top_Yangtze_River_Delta = pd.DataFrame(top_Yangtze_River_Delta)
-    top_other = pd.DataFrame(top_other)
-    print('Top50 长三角地区：', len(top_Yangtze_River_Delta))
-    print('Top50 其余地区：', len(top_other))
+'''
+will = torch.ge(pre_result, 0.5).float().sum()
+no = torch.lt(pre_result, 0.4).float().sum()
 
-    # remain/长三角/其他
-    remain = pre_positive.iloc[50:]
-    remain_Yangtze_River_Delta = []
-    remain_other = []
-    for row in remain.itertuples():
-        province = getattr(row, 'province')
-        if province in Yangtze_River_Delta:
-            remain_Yangtze_River_Delta.append(row)
-        else:
-            remain_other.append(row)
-    remain_Yangtze_River_Delta = pd.DataFrame(remain_Yangtze_River_Delta)
-    remain_other = pd.DataFrame(remain_other)
-    print('50之后 长三角地区：', len(remain_Yangtze_River_Delta))
-    print('50之后 其余地区：', len(remain_other))
+pre_result = pd.DataFrame(pre_result.detach().numpy())
+# pre_result更新为：名字、地区、概率
+pre_result = pd.concat([name_region, pre_result], axis=1)
+# pre_positive预测会充值的供应商
+pre_positive = pre_result[pre_result.iloc[:, 2] >= 0.5]
+pre_positive.columns = ['name', 'province', 'prob']
 
-    # save results
-    top_Yangtze_River_Delta.iloc[:, 2:4].to_csv(
-        './dataResult/前50_长三角地区.csv', index=False)
-    top_other.iloc[:, 2:4].to_csv('./dataResult/前50_其余地区.csv', index=False)
-    remain_Yangtze_River_Delta.iloc[:, 2:4].to_csv(
-        './dataResult/50之后_长三角地区.csv', index=False)
-    remain_other.iloc[:, 2:4].to_csv('./dataResult/50之后_其余地区.csv', index=False)
+# 预测为正样本的供应商名单的set
+pd_positive_set = set(pre_positive.iloc[:, 0])
+# 本次数据统计中，新增的VIP供应商
+pd_newadd = pd.read_csv('dataResult/new_add.csv')
+# 新增的VIP供应商有多少在预测为正样本的供应商名单里
+count = 0
+in_list = []
+# 新增的VIP供应商不在预测为正样本的供应商名单里的的name
+not_in_list = []
+for row in pd_newadd.itertuples():
+    name = getattr(row, 'name')
+    if name in pd_positive_set:
+        count = count+1
+        in_list.append(name)
+    else:
+        not_in_list.append(name)
+print(count)
+
+import pymysql
+db = pymysql.connect('localhost', 'root', 'Qq56138669', 'zjc')
+cursor = db.cursor()
+
+# 新增的VIP供应商不在预测为正样本的供应商名单里的的id
+not_in_id = []
+# 没查到的VIP供应商名单（应该都是新供应商，本地数据库里没有）
+not_exist = []
+for name in not_in_list:
+    sql = 'SELECT id FROM zjc_supplier where name="'+name+'"'
+    if cursor.execute(sql):
+        data = cursor.fetchone()
+        not_in_id.append(data[0])
+    else:
+        not_exist.append(name)
+
+# 新增的VIP供应商不在预测为正样本的供应商名单里的，他们的信息
+not_in_info = []
+for id in not_in_id:
+    sql_order = "select zjc_supplier.id,zjc_supplier.name,zjc_supplier_param.attach_count,zjc_supplier.type,zjc_supplier.fund,zjc_supplier_param.service_level_average,zjc_supplier_param.instock_service_average,zjc_supplier_param.instock_product_average,zjc_supplier_param.instock_deliverspeed_average,zjc_supplier_param.iswin_count,zjc_supplier_param.price_level_average,zjc_supplier_param.tender_count,zjc_supplier_param.semester_tender_count,zjc_supplier_param.bidconcern_count,zjc_supplier_param.semester_bidconcern_count,zjc_supplier_param.login_days,zjc_supplier_param.semester_login_days,zjc_supplier_param.integrity_count,zjc_supplier_param.contract_rate,zjc_supplier_param.instock_honesty_average,zjc_supplier.regchecktime,zjc_supplier.createtime from zjc_supplier,zjc_supplier_param where zjc_supplier.id=zjc_supplier_param.supplier_id and zjc_supplier.state=2 and zjc_supplier.id=" + \
+        str(id)
+    if cursor.execute(sql_order):
+        not_in_information = cursor.fetchone()
+        not_in_info.append(not_in_information)
+    else:
+        pass
+
+not_in_info = pd.DataFrame(not_in_info)
+not_in_info.columns = ['id', 'name', 'attach_count', 'type', 'fund', 'service_average', 'instock_service', 'instock_product', 'instock_deliverspeed', 'win', 'price',
+                        'tender', 'se_tender', 'bidconcern', 'se_bidconcern', 'login', 'se_login', 'integrity', 'contract_rate', 'instock_honesty', 'regchecktime', 'createtime']
+
+not_in_info.to_csv('dataResult/not_in_info.csv', index=False)
+
+# 新增的预测正确的供应商信息
+in_info = []
+for name in in_list:
+    sql_order = "select zjc_supplier.id,zjc_supplier.name,zjc_supplier_param.attach_count,zjc_supplier.type,zjc_supplier.fund,zjc_supplier_param.service_level_average,zjc_supplier_param.instock_service_average,zjc_supplier_param.instock_product_average,zjc_supplier_param.instock_deliverspeed_average,zjc_supplier_param.iswin_count,zjc_supplier_param.price_level_average,zjc_supplier_param.tender_count,zjc_supplier_param.semester_tender_count,zjc_supplier_param.bidconcern_count,zjc_supplier_param.semester_bidconcern_count,zjc_supplier_param.login_days,zjc_supplier_param.semester_login_days,zjc_supplier_param.integrity_count,zjc_supplier_param.contract_rate,zjc_supplier_param.instock_honesty_average,zjc_supplier.regchecktime,zjc_supplier.createtime from zjc_supplier,zjc_supplier_param where zjc_supplier.id=zjc_supplier_param.supplier_id and zjc_supplier.state=2 and zjc_supplier.name='"+name+"'"
+    if cursor.execute(sql_order):
+        in_information = cursor.fetchone()
+        in_info.append(in_information)
+    else:
+        pass
+
+in_info = pd.DataFrame(in_info)
+in_info.columns = ['id', 'name', 'attach_count', 'type', 'fund', 'service_average', 'instock_service', 'instock_product', 'instock_deliverspeed', 'win', 'price',
+                    'tender', 'se_tender', 'bidconcern', 'se_bidconcern', 'login', 'se_login', 'integrity', 'contract_rate', 'instock_honesty', 'regchecktime', 'createtime']
+
+in_info.to_csv('dataResult/in_info.csv', index=False)
+
+db.close()
+'''
+'''
+# 会充值/0.4-0.5二次充值/不会充值
+print('>=0.5:\t', will)
+print('>=0.4&&<0.5\t:', total-will-no)
+print('<0.4:\t', no)
+
+pre_result = pd.DataFrame(pre_result.detach().numpy())
+# pre_result更新为：名字、地区、概率
+pre_result = pd.concat([name_region, pre_result], axis=1)
+# pre_positive预测会充值的供应商
+pre_positive = pre_result[pre_result.iloc[:, 2] >= 0.5]
+pre_positive.columns = ['name', 'province', 'prob']
+
+# 去除预测名单种已经在正负样本中的供应商
+tmp = []
+for row in pre_positive.itertuples():
+    name = getattr(row, 'name')
+    if name not in name_set:
+        tmp.append(row)
+
+pre_positive = pd.DataFrame(tmp)
+pre_positive.sort_values('prob', ascending=False, inplace=True,)
+print('最终预测VIP充值的有：', len(pre_positive))
+'''
+
+'''
+Yangtze_River_Delta = set({'上海市', '江苏省', '浙江省', '安徽省'})
+# top50/长三角/其他
+top = pre_positive.iloc[0:50]
+top_Yangtze_River_Delta = []
+top_other = []
+for row in top.itertuples():
+    province = getattr(row, 'province')
+    if province in Yangtze_River_Delta:
+        top_Yangtze_River_Delta.append(row)
+    else:
+        top_other.append(row)
+top_Yangtze_River_Delta = pd.DataFrame(top_Yangtze_River_Delta)
+top_other = pd.DataFrame(top_other)
+print('Top50 长三角地区：', len(top_Yangtze_River_Delta))
+print('Top50 其余地区：', len(top_other))
+
+# remain/长三角/其他
+remain = pre_positive.iloc[50:]
+remain_Yangtze_River_Delta = []
+remain_other = []
+for row in remain.itertuples():
+    province = getattr(row, 'province')
+    if province in Yangtze_River_Delta:
+        remain_Yangtze_River_Delta.append(row)
+    else:
+        remain_other.append(row)
+remain_Yangtze_River_Delta = pd.DataFrame(remain_Yangtze_River_Delta)
+remain_other = pd.DataFrame(remain_other)
+print('50之后 长三角地区：', len(remain_Yangtze_River_Delta))
+print('50之后 其余地区：', len(remain_other))
+
+# save results
+top.iloc[:, 1:3].to_csv("./dataResult/top50.csv", index=False)
+# top_Yangtze_River_Delta.iloc[:, 2:4].to_csv(
+#     './dataResult/前50_长三角地区.csv', index=False)
+# top_other.iloc[:, 2:4].to_csv('./dataResult/前50_其余地区.csv', index=False)
+remain_Yangtze_River_Delta.iloc[:100, 2:4].to_csv(
+    './dataResult/长三角地区.csv', index=False)
+remain_other.iloc[:100, 2:4].to_csv(
+    './dataResult/其余地区.csv', index=False)
+'''
