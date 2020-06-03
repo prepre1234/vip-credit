@@ -1,7 +1,7 @@
 __pycache__/
-
 .vscode/
 runs/
+model/
 
 *.csv
 *.txt
