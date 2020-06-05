@@ -80,8 +80,8 @@ data_refuse = data_refuse.drop_duplicates(keep=False, subset=['name'])
 # data 整理好的所有的正负样本
 data = pd.concat([data_pay, data_refuse])
 
-# 开通了VIP的新供应商
-vip_new_supplier = data.query('years<0.5 and label ==1')
+# 开通了VIP的years<0.25的新供应商
+vip_new_supplier = data.query('years<0.25 and label ==1')
 vip_new_supplier.to_csv("./dataDump/vip_new_supplier.csv", index=False)
 
 # 没有查到的供应商
@@ -89,5 +89,5 @@ unfound = pd.DataFrame(unfound, columns=['name', 'label'])
 unfound.to_csv('./dataDump/unfound.csv', index=False)
 
 # 所有的老供应商(包含正负样本)
-old_supplier = data.query('years>=0.5')
-old_supplier.to_csv('./dataDump/vip_data.csv', index=False)
+vip_data = data.query('years>=0.25')
+vip_data.to_csv('./dataDump/vip_data.csv', index=False)
