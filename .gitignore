@@ -6,6 +6,7 @@ model/
 *.csv
 *.txt
 !requirements.txt
+!info.txt
 *.xlsx
 *.pk
 *test*
